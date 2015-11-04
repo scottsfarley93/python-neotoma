@@ -20,6 +20,17 @@ def stripDigits(s):
 
 ########CONTACTS#################
 def getContacts(contactid = "", contactname = "", contactstatus = "", familyname = "", **kwargs):
+    """Gets contacts from the neotoma database api.
+        Parameters:
+            Contact ID: A valid neotoma contactID of type integer
+            Contact Name: A full or partial name to search for.  Numbers will be removed, but the string can contain
+                search characters [%, *].  See the API documentation for details.
+            Contact Status: The status of the contact you are searching for.
+                Valid options are: ["ACTIVE", 'DECEASED', "DEFUNCT", "EXTANT", "INACTIVE", "RETIRED", "UNKNOWN"]
+            Family Name:  The last name / family name of the contact you are searching for.
+        Returns:
+            ContactCollection
+    """
     endpoint = "http://api.neotomadb.org/v1/data/contacts"
     url = endpoint  + "?"
     if contactid != "":
