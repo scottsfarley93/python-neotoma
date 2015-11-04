@@ -1,24 +1,64 @@
+##todo:
+##1.  Load gpid from lookup table
+##2.  Load taxa/ecol group values from lookup table
+##3.  Accept both lists/tuples and integers in getDatasetDownload --> implement new class: Dataset Collection
+
+
+
 from classes import * ##This file has all of the class definitions necessary for the api responses
 import urllib2
 import json
 
-########CONTACTS#################
 
-def getContacts(contactid = "", contactname = "", contactstatus = "", familyname = ""):
-    endpoint = "http://api.neotoma.org/v2/data/contacts"
+def stripDigits(s):
+    """Removes numeric characters"""
+    import re
+    return re.sub("\d+", "", s)
+
+
+
+
+########CONTACTS#################
+def getContacts(contactid = "", contactname = "", contactstatus = "", familyname = "", **kwargs):
+    endpoint = "http://api.neotomadb.org/v1/data/contacts"
     url = endpoint  + "?"
     if contactid != "":
-        url += "contactid=" + contactid + "&"
+        try:
+            contactid = int(contactid)
+        except ValueError:
+            print "Invalid contactID input."
+            return False
+        url += "contactid=" + str(contactid) + "&"
     if contactname != "":
-        url += "contactname=" + contactname + "&"
+        try:
+            contactname = stripDigits(contactname)
+            contactname = str(contactname)
+        except:
+            print "Invalid contact name input."
+            return False
+        url += "contactname=" + str(contactname) + "&"
     if contactstatus != "":
+        try:
+            contactstatus = str(contactstatus)
+        except:
+            print "Invalid contact status input."
+            return False
+        if contactstatus.upper() not in ["ACTIVE", 'DECEASED', "DEFUNCT", "EXTANT", "INACTIVE", "RETIRED", "UNKNOWN"]:
+            print "Invalid contact status input."
+            return False
         url += "contactstatus=" + contactstatus + "&"
     if familyname != "":
+        try:
+            familyname = stripDigits(familyname)
+            familyname = str(familyname)
+        except:
+            print "Invalid Family Name input."
+            return False
         url += "familyname=" + familyname + "&"
-
     CC = ContactCollection()
     if url[-1] == "&":
         url = url[:-1]
+    print url
     response = urllib2.urlopen(url)
     data = json.load(response)
     success = data['success']
@@ -55,22 +95,72 @@ def getContacts(contactid = "", contactname = "", contactstatus = "", familyname
         return CC
 
 ##########PUBLICATIONS##############
+"""
+Legacy	Legacy citation ingested from another database and not parsed into separate fields
+Journal Article	Article in a journal
+Book Chapter	Chapter or section in an edited book
+Authored Book	An authored book
+Edited Book	An edited book
+Master's Thesis	A Master's thesis
+Doctoral Dissertation	A doctoral dissertation or Ph.D. thesis
+Authored Report	An authored report
+Edited Report	An edited report
+Other Authored	An authored publication not fitting in any other category (e.g. web sites, maps)
+Other Edited	An edited publication not fitting into any other category
+"""
 
-
-def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubtype ="", year = "", search = ""):
-    endpoint = "http://api.neotoma.org/v1/data/publications"
+def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubtype ="", year = "", search = "", **kwargs):
+    endpoint = "http://api.neotomadb.org/v1/data/publications"
     url = endpoint + "?"
     if pubid != "":
-        url += "pubid=" + pubid + "&"
+        try:
+            pubid = int(pubid)
+        except:
+            print "Invalid publication id input."
+            return False
+        url += "pubid=" + str(pubid) + "&"
     if contactid != "":
-        url += "contactid=" + contactid + "&"
+        try:
+            contactid = int(contactid)
+        except:
+            print "Invalid contact id."
+            return False
+        url += "contactid=" + str(contactid) + "&"
     if datasetid != "":
-        url += "datasetid=" + datasetid + "&"
+        try:
+            datasetid = int(datasetid)
+        except:
+            print "Invalid dataset id input."
+            return False
+        url += "datasetid=" + str(datasetid) + "&"
     if author != "":
+        try:
+            author = str(author)
+            author = stripDigits(author)
+        except:
+            print "Invalid author input."
+            return False
         url += "author=" + author + "&"
     if pubtype != "":
+        pubtypes = ["Legacy", "Journal Article", "Book Chapter", "Authored Book", "Edited Book", "Master's Thesis", "Doctorial Dissertation",
+                    "Authored Report", "Edited Report", "Other Authored", "Other Edited"]
+        try:
+            pubtype = str(pubtype)
+            if pubtype not in pubtypes:
+                print "Invalid publication type input."
+                print "Type must be one of:"
+                print pubtypes
+                return False
+        except:
+            print "Invalid publication type input."
+            return False
         url += "pubtype=" + pubtype + "&"
     if year != "":
+        try:
+            year = int(year)
+        except:
+            print "Invalid year input."
+            return False
         url += "year=" + year + "&"
     if search != "":
         url += "search=" + search
@@ -112,7 +202,7 @@ def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubty
 #######SITES##############
 
 
-def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnits=True):
+def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnits=True, **kwargs):
     """Creates and returns a site collection object"""
     SC = siteCollection(sitename=sitename, altmin=altmin, altmax=altmax, loc=loc,
                         gpid=gpid, getCollectionUnits = getCollectionUnits)
@@ -120,14 +210,43 @@ def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUni
     url = endpoint + "?"
     ##Build api query
     if sitename != "": ##name of site
+        try:
+            sitename = str(sitename)
+        except:
+            print "Invalid sitename input."
+            return False
         url += "sitename=" + sitename
     if altmin != -1: ##minimum altitude
+        try:
+            altmin = float(altmin)
+        except:
+            print "Invalid altmin input."
+            return False
         url += "&altmin=" + str(altmin)
     if altmax != -1:##maximum altitude
+        try:
+            altmax = float(altmax)
+        except:
+            print "Invalid altmax input."
+            return False
         url += "&altmax=" + str(altmax)
     if loc != (): ##location bounding box
+        try:
+            assert isinstance(loc, tuple) or isinstance(loc, list)
+            assert len(loc) == 4
+            for i in loc:
+                assert str(i).isdigit()
+        except AssertionError:
+            print "Invalid location bounding box."
+            return False
         url = "&loc=" + str(loc[0]) + "," + str(loc[1]) + "," + str(loc[2]) + "," + str(loc[3])
     if gpid != 0:
+        ##todo: validate this
+        try:
+            gpid = int(gpid)
+        except:
+            print "Invalid gipd input."
+            return False
         url += "&gpid=" + str(gpid)
     if url[-1] == "&":
         url = url[:-1]
@@ -227,20 +346,73 @@ def getAllSites():
     getSites()
 
 #############TAXA#################
+"""
+AVE	Birds
+BIM	Biometric variables
+BRY	Bryophytes
+BTL	Beetles
+FSH	Fish
+HRP	Reptiles and amphibians
+LAB	Laboratory analyses
+MAM	Mammals
+MOL	Molluscs
+PHY	Physical variables
+TES	Testate amoebae
+VPL	Vascular plants
+"""
 
-def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup = ""):
-    endpoint = "http://api.neotoma.org/v1/data/taxa"
+def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup = "", **kwargs):
+    taxonCodes = ["AVE", "BIM", "BRY", "BTL", "FSH", "HRP", "LAB", "MAM", "MOL", "PHY", "TES", "VPL"]
+    taxonCodeLookup = ["Birds", "Biometric Variables", "Bryophytes", "Beetles", "Fish", "Reptiles and amphibians",
+                       "Laboratory analysis", "Mammals", "Mollusks", "Physical variables", "Testate amoebae", "Vascular plants"]
+    endpoint = "http://api.neotomadb.org/v1/data/taxa"
     url = endpoint + "?"
     if taxonID != "":
+        try:
+            taxonID = int(taxonID)
+        except ValueError:
+            print "Invalid taxon ID input."
+            return False
         url  += "taxonID=" + str(taxonID) + "&"
     if taxonName != "":
+        try:
+            taxonName= stripDigits(taxonName)
+            taxonName = str(taxonName)
+        except:
+            print "Invalid contact name input."
+            return False
         taxonName = taxonName.replace(" ", "%20") ##url encode
         url += "taxonName=" + taxonName + "&"
     if status != "":
+        try:
+            status = str(status)
+            if status.upper() not in ['EXTINCT', "EXTANT", "ALL"]:
+                raise ValueError
+        except:
+            print "Invalid status input."
+            return False
         url += "status=" + status + "&"
     if taxagroup != "":
+        try:
+            taxagroup = str(taxagroup)
+            if taxagroup.upper() in taxonCodes: ##check if it is in code form
+                pass
+            elif taxagroup in taxonCodeLookup:
+                    index = taxonCodeLookup.index(taxagroup)
+                    taxagroup = taxonCodes[index]
+            else:
+                raise ValueError
+        except:
+            print "Invalid taxa group."
+            return False
         url += "taxagroup=" + taxagroup + "&"
     if ecolGroup != "":
+        ##todo: validate this
+        try:
+            ecolGroup = str(ecolGroup)
+        except:
+            print "Invalid ecological group."
+            return False
         url += "ecolgroup=" + ecolGroup
     ##do the api call
     if url[-1] == "&":
@@ -264,8 +436,8 @@ def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup 
             tName = t['TaxonName']
             tAuthor = t['Author']
             tExtinct = t['Extinct']
-            tTaxaGroup = t['TaxaGroup']
-            tEcolGroup = t['EcolGroup']
+            tTaxaGroup = t['TaxaGroupID']
+            tEcolGroup = t['EcolGroups']
             tHigherID = t['HigherTaxonID']
             tPubID = t['PublicationID']
             tNotes = t['Notes']
@@ -277,8 +449,9 @@ def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup 
         return collection
 
 ##########SampleData###########
-def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc= (), gpid = "", altmin = "", altmax = ""):
-    endpoint = "http://api.neotoma.org/v1/data/sampledata"
+##todo: validate this
+def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc= (), gpid = "", altmin = "", altmax = "", **kwargs):
+    endpoint = "http://api.neotomadb.org/v1/data/sampledata"
     url = endpoint  + "?"
     if taxonids != "":
         idList = ""
@@ -354,7 +527,7 @@ def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc=
         print "Found " + str(len(SC.items)) + " sites and returned them as a SampleCollection."
         return SC
 
-def getDatasetDownload(datasetID):
+def downloadDataset(datasetID):
     endpoint = "http://api.neotomadb.org/v1/data/downloads/"
     try:
         int(datasetID)
@@ -362,7 +535,6 @@ def getDatasetDownload(datasetID):
         print "Invalid datasetID format."
         return False
     url = endpoint + str(datasetID)
-    print url
     response = urllib2.urlopen(url)
     data = json.load(response)
     success = data['success']
@@ -371,7 +543,6 @@ def getDatasetDownload(datasetID):
         print data['message']
         return False
     else:
-        DC = DatasetCollection()
         for i in data['data']:
             datasetID = i['DatasetID']
             datasetName = i['DatasetName']
@@ -449,15 +620,38 @@ def getDatasetDownload(datasetID):
                     S.addSampleData(SD)
                     j +=1
                 download.addSample(S)
+                return download
                 i +=1
-            DC.addItem(download)
-        print "Downloaded " + str(len(DC.items)) + " items as a DatasetCollection."
-        return DC
+
+
+def getDatasetDownload(dids):
+    datasetCollection = DatasetCollection()
+    if isinstance(dids, list) or isinstance(dids, tuple):
+        i = 0
+        ##iterate through all ids in a list, append the dataset download, and return as a dataset collection
+        while i < len(dids):
+            thisID = dids[i]
+            datasetDownload = downloadDataset(thisID)
+            if not datasetDownload:
+                return False ##invalid input
+            else:
+                datasetCollection.addItem(datasetDownload)
+            i +=1
+        return datasetCollection
+    else:
+        ##not a list or tuple --> go straight to download function
+        datasetDownload = downloadDataset(dids)
+        if not datasetDownload:
+            return False
+        else:
+            datasetCollection.addItem(datasetDownload)
+            return datasetCollection
+
 
 
 ##DATASETS
 def getDatasets(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=(), gpid="", taxonids="", taxonname="", ageold="",
-                ageyoung="", ageof="", subdate=""):
+                ageyoung="", ageof="", subdate="", **kwargs):
     """Returns a dataset collection"""
     endpoint ="http://api.neotomadb.org/v1/data/datasets"
     url = endpoint + "?"
@@ -570,9 +764,9 @@ def getDatasets(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=
         for i in data['data']:
             did = i['DatasetID']
             dname = i['DatasetName']
-            dUnitHandle = i['ColUnitHandle']
+            dUnitHandle = i['CollUnitHandle']
             dUnitID = i['CollectionUnitID']
-            dUnitType = i['ColUnitID']
+            dUnitType = i['CollUnitType']
             dType = i['DatasetType']
             dAgeOldest = i['AgeOldest']
             dAgeYoungest = i['AgeYoungest']
