@@ -121,6 +121,17 @@ Other Edited	An edited publication not fitting into any other category
 """
 
 def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubtype ="", year = "", search = "", **kwargs):
+    """Get publications from the neotoma database.
+        Parameters:
+            pubid: A valid unique publication id in the neotoma database
+            contactid: A valid unique contact id in the neotoma database
+            datasetid: A valid unique dataset identified in the neotoma database
+            author: A search string of characters for the author of a publication
+            year: year publication was written
+            search: A term to search the publication citation for
+        Output:
+            PublicationCollection Object
+    """
     endpoint = "http://api.neotomadb.org/v1/data/publications"
     url = endpoint + "?"
     if pubid != "":
@@ -184,7 +195,7 @@ def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubty
     if success != 1:
         print "Failed to obtain publication collection."
         print data['message']
-        return False ##return empty collection
+        return False
     else:
         i = 0
         pubData = data['data']
@@ -214,7 +225,19 @@ def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubty
 
 
 def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnits=True, **kwargs):
-    """Creates and returns a site collection object"""
+    """Query the neotoma database for research sites
+        Parameters:
+            sitename: A search string for the name of the research site
+            altmin: An integer representing the minimum altitude of sites in the query return
+            altmax An integer representing the maximum altitude of the sites in the query return
+            loc: A tuple or list of the bounding box for which to search in format: [longW, latS, longE, latN]
+            gpid= integer representing the geopolitical id number in which to query sites
+            getCollectionUnits = boolean to determine if the return includes the collections units at the site
+                True: return colllection units
+                False: return only site metadata
+        Return:
+            SiteCollection
+    """
     SC = siteCollection(sitename=sitename, altmin=altmin, altmax=altmax, loc=loc,
                         gpid=gpid, getCollectionUnits = getCollectionUnits)
     endpoint = "http://api.neotomadb.org/v1/data/sites"
@@ -297,6 +320,12 @@ def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUni
         return SC ##return the site collection object
 
 def getSiteByID(siteID):
+    """Query the neotoma database for a specific siteID.
+        Parameters:
+            siteID: An integer representing a unique dataset identifier in the neotoma database.
+        Returns:
+            object of class Site
+    """
     endpoint = "http://api.neotomadb.org/v1/data/sites/"
     url = endpoint + str(siteID)
     if url[-1] =="&":
@@ -353,7 +382,10 @@ def getSiteByID(siteID):
 
 
 def getAllSites():
-    """Return all sites in the database"""
+    """Return all sites in the database.
+        Parameters: None
+        Returns:
+            SiteCollection"""
     getSites()
 
 #############TAXA#################
@@ -373,6 +405,16 @@ VPL	Vascular plants
 """
 
 def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup = "", **kwargs):
+    """Query the neotoma database for taxa
+        Parameters:
+            taxonid: integer representing unique taxa id in the neotoma database
+            taxonname: a string representing the full or partial name of the taxon
+            status: a string that is one of: ['Extant", "Extinct", or "all].  Default is all
+            taxagroup: a string representing the group in which the taxa is categorized
+            ecolGroup: a string representing the ecological group in which the taxa is categorized
+        Returns:
+            TaxaCollection
+    """
     taxonCodes = ["AVE", "BIM", "BRY", "BTL", "FSH", "HRP", "LAB", "MAM", "MOL", "PHY", "TES", "VPL"]
     taxonCodeLookup = ["Birds", "Biometric Variables", "Bryophytes", "Beetles", "Fish", "Reptiles and amphibians",
                        "Laboratory analysis", "Mammals", "Mollusks", "Physical variables", "Testate amoebae", "Vascular plants"]
@@ -462,6 +504,18 @@ def getTaxa(taxonID ="", taxonName = "", status = "", taxagroup = "", ecolGroup 
 ##########SampleData###########
 ##todo: validate this
 def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc= (), gpid = "", altmin = "", altmax = "", **kwargs):
+    """Query the neotoma database for raw sample data
+        Parameters:
+            taxonids: A list or tuple of integers or a single integer representing one or more taxon identifier to search for
+            taxonname: A list or tuple of strings or a single string representing one or more full or partial names to search for
+            ageold: An integer that represents the limit for the oldest data to be returned
+            ageyoung: An integer that represents the limit for the youngest data to be return
+            gpid: An integer representing a valid geopolitical unit in the neotoma database in which to limit query results
+            altmin: An integer representing the lowest altitude data to be returned
+            altmax: An integer representing the highest altitude data to be returned
+        Returns:
+            SampleDataCollection
+    """
     endpoint = "http://api.neotomadb.org/v1/data/sampledata"
     url = endpoint  + "?"
     if taxonids != "":
@@ -539,6 +593,12 @@ def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc=
         return SC
 
 def downloadDataset(datasetID):
+    """Download a single dataset
+        Parameters:
+            DatasetID: An integer representing a valid dataset identifier in the neotoma database
+        Returns:
+            object of type DatasetDownload
+    """
     endpoint = "http://api.neotomadb.org/v1/data/downloads/"
     try:
         int(datasetID)
@@ -636,6 +696,12 @@ def downloadDataset(datasetID):
 
 
 def getDatasetDownload(dids):
+    """Query the neotoma database for multiple datasets and download their contents
+        Parameters:
+            dids: A list or tuple of integers or a single integer representing a the dataset identifiers to be downloaded
+        Returns:
+            DatasetCollection
+    """
     datasetCollection = DatasetCollection()
     if isinstance(dids, list) or isinstance(dids, tuple):
         i = 0
@@ -661,13 +727,38 @@ def getDatasetDownload(dids):
 
 
 ##DATASETS
+##Todo: Better valdiation on this method
 def getDatasets(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=(), gpid="", taxonids="", taxonname="", ageold="",
                 ageyoung="", ageof="", subdate="", **kwargs):
-    """Returns a dataset collection"""
+
+    """Query the neotoma database for datasets
+        Parameters:
+            siteid: an integer representing a site id number in neotoma database
+            datasettype: A string representing a valid dataset type
+            piid: An integer representing the unique id of the project PI for the site
+            altmin: An integer representing the lowest altitude data to return
+            altmax: An integer representing the highest altitude data to return
+            loc: A list or tuple representing the bounding box of the data to be returned (longW, latS, longE, latN)
+            gpid: An integer representing the geopolitical id in which to search for data
+            taxonids: A list or tuple of integers or a single integer that represents the taxa id(s) for which to search
+            taxaonname: A list or tuple of strings or a single string representing a full or partial taxon name for which to search
+            ageold: An integer representing the oldest age data to be returned
+            ageyoung: An integer representing the youngest age data to be returned
+            ageof: A string
+            subdata: A string of format YYYY-MM-DD or MM-DD-YYYY to represent the submission date of the dataset
+        Returns:
+            DatasetCollection
+    """
     endpoint ="http://api.neotomadb.org/v1/data/datasets"
     url = endpoint + "?"
     if siteid != "":
-        url += "siteid=" + siteid + "&"
+        try:
+            siteid = stripDigits(siteid)
+            siteid = int(siteid)
+        except:
+            print "Invalid site id input"
+            return False
+        url += "siteid=" + str(siteid) + "&"
     if datasettype != "":
         ##validate input
         try:
