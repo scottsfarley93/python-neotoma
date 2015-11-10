@@ -1,5 +1,4 @@
 ##todo:
-##1.  Load gpid from lookup table
 ##2.  Load taxa/ecol group values from lookup table
 ##3.  Accept both lists/tuples and integers in getDatasetDownload --> implement new class: Dataset Collection
 
@@ -277,7 +276,11 @@ def getSite(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnit
     if gpid != 0:
         ##todo: validate this
         try:
-            gpid = int(gpid)
+            gpid = str(gpid)
+            if gpid.isdigit():
+                gpid = int(gpid)
+            else:
+                gpid = int(lookupGPID(keyword=gpid))
         except:
             print "Invalid gipd input."
             return False
@@ -539,7 +542,11 @@ def getSampleData(taxonids = "", taxonname = "", ageold= "", ageyoung = "", loc=
             locString += str(i) + ","
         url += "loc=" + locString + "&"
     if gpid != "":
-        url += "gpid=" + gpid
+        gpid = str(gpid)
+        if gpid.isdigit():
+            gpid = int(gpid)
+        else:
+            gpid = int(lookupGPID(keyword=gpid))
     if altmin!= "":
         url += "altmin=" + altmin
     if altmax != "":
@@ -803,6 +810,11 @@ def getDataset(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=(
         ageof = "taxon"
     if gpid != "":
         ##todo: validate gpid
+        gpid = str(gpid)
+        if gpid.isdigit():
+            gpid = int(gpid)
+        else:
+            gpid = int(lookupGPID(keyword=gpid))
         url += "gpid=" + str(gpid) + "&"
     if taxonids != "":
         try:

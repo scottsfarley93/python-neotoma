@@ -7,4 +7,4 @@ import classes
 # import matplotlib.pyplot as plt
 # matrix.plot()
 # plt.show()
-print API.lookupGPID(gpid=1)
+print API.getSite(gpid=1)
