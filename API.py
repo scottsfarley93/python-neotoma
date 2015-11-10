@@ -19,7 +19,7 @@ def stripDigits(s):
 
 
 ########CONTACTS#################
-def getContacts(contactid = "", contactname = "", contactstatus = "", familyname = "", **kwargs):
+def getContact(contactid = "", contactname = "", contactstatus = "", familyname = "", **kwargs):
     """Gets contacts from the neotoma database api.
         Parameters:
             Contact ID: A valid neotoma contactID of type integer
@@ -120,7 +120,7 @@ Other Authored	An authored publication not fitting in any other category (e.g. w
 Other Edited	An edited publication not fitting into any other category
 """
 
-def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubtype ="", year = "", search = "", **kwargs):
+def getPublication(pubid="", contactid = "", datasetid = "", author = "", pubtype ="", year = "", search = "", **kwargs):
     """Get publications from the neotoma database.
         Parameters:
             pubid: A valid unique publication id in the neotoma database
@@ -224,7 +224,7 @@ def getPublications(pubid="", contactid = "", datasetid = "", author = "", pubty
 #######SITES##############
 
 
-def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnits=True, **kwargs):
+def getSite(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUnits=False, **kwargs):
     """Query the neotoma database for research sites
         Parameters:
             sitename: A search string for the name of the research site
@@ -308,11 +308,11 @@ def getSites(sitename="", altmin=-1, altmax=-1, loc=(), gpid=0, getCollectionUni
             else:
                 ##do the object creation here and don't get collections unit
                 sitename = site['SiteName']
-                longE = site['longitudeEast']
-                longW = site['longitudeWest']
-                latN = site['latitudeNorth']
-                latS = site['latitudeSouth']
-                siteDesc = site['siteDescription']
+                longE = site['LongitudeEast']
+                longW = site['LongitudeWest']
+                latN = site['LatitudeNorth']
+                latS = site['LatitudeSouth']
+                siteDesc = site['SiteDescription']
                 S = Site(siteID = siteID, siteName=sitename, longE=longE, longW=longW, latN=latN, latS=latS, desc=siteDesc)
             SC.addSiteToCollection(S)
             i +=1
@@ -379,14 +379,6 @@ def getSiteByID(siteID):
             i +=1
         return S
 
-
-
-def getAllSites():
-    """Return all sites in the database.
-        Parameters: None
-        Returns:
-            SiteCollection"""
-    getSites()
 
 #############TAXA#################
 """
@@ -691,8 +683,8 @@ def downloadDataset(datasetID):
                     S.addSampleData(SD)
                     j +=1
                 download.addSample(S)
-                return download
-                i +=1
+                i += 1
+            return download
 
 
 def getDatasetDownload(dids):
@@ -728,7 +720,7 @@ def getDatasetDownload(dids):
 
 ##DATASETS
 ##Todo: Better valdiation on this method
-def getDatasets(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=(), gpid="", taxonids="", taxonname="", ageold="",
+def getDataset(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=(), gpid="", taxonids="", taxonname="", ageold="",
                 ageyoung="", ageof="", subdate="", **kwargs):
 
     """Query the neotoma database for datasets
@@ -910,5 +902,82 @@ def getDatasets(siteid="", datasettype="", piid="", altmin="", altmax = "", loc=
         print "Found " + str(len(DC.items)) + " datasets and returned them as a DatasetCollection."
         return DC
 
+
+
+def getPINames(dataset):
+    PI_List = dataset.datasetPIs
+    returnList = []
+    for person in PI_List:
+        returnList.append(person.contactName)
+    return returnList
+
+def getCounts(dataset):
+    import pandas as pd
+    print dataset.__dict__
+    samples = dataset.samples
+    print samples
+    header = []
+    cursor =  0
+    theMatrix = []
+    depths = []
+    ##first get all taxa that are used
+    taxaSet = []
+    for sample in samples:
+        for item in sample.sampleData:
+            taxaSet.append(item.taxonName)
+    taxaSet = set(taxaSet)
+    numTaxa = len(taxaSet)
+
+    header = list(taxaSet) ##convert back to a list for the header
+    for sample in samples:
+        sampleDepth = sample.unitDepth
+        depths.append(sampleDepth)
+        unitThickness = sample.unitThickness
+        sampleData = sample.sampleData
+        unitTemplate = [0] * numTaxa
+        for i in sampleData:
+            taxonName = i.taxonName
+            ##get the index
+            index = header.index(taxonName)
+            unitTemplate[index] = i.Value
+        theMatrix.append(unitTemplate)
+        cursor +=1
+    theMatrix = pd.DataFrame(theMatrix, index=depths, columns=header)
+    print theMatrix
+    return theMatrix
+
+def lookupGPID(keyword="", gpid=0):
+    import urllib2
+    endpoint = "http://api.neotomadb.org/v1/dbtables/GeoPoliticalUnits?limit=all"
+    response = urllib2.urlopen(endpoint)
+    data = json.load(response)
+    success = data['success']
+    if success != 1:
+        print "Failed to get GPID lookup table."
+        print "Message was: "
+        print data['message']
+        return False
+    data = data['data']
+    names = []
+    codes = []
+    for place in data:
+        names.append(place['GeoPoliticalName'].upper())
+        codes.append(place['GeoPoliticalID'])
+    if keyword != "":
+        index = names.index(keyword.upper())
+        if index == -1:
+            print "Invalid Geopolitical Unit input."
+            return False
+        else:
+            code = codes[index]
+            return code
+    elif gpid != 0:
+        index = codes.index(gpid)
+        if index == -1:
+            print "Invalid GPID input."
+            return False
+        else:
+            name = names[index]
+            return name
 
 
