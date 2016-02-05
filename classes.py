@@ -267,7 +267,7 @@ class SampleAge():
         self.chronID = chronID
         self.chronName = chronName
         self.ageType = ageType
-        self.age =age
+        self.age = age
         self.ageYounger = ageYounger
         self.ageOlder = ageOlder
 
