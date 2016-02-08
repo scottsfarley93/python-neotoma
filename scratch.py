@@ -102,13 +102,13 @@ def getAllTaxa():
 
 
 def getSpeciesDataToCSV(tName, fName):
+    print "Running getSpeciesDataToCSV: ", tName, fName
     datasetCollection = API.getDataset(taxonname=tName)
     datasets = datasetCollection.items
     DIDs = []
     for dataset in datasets:
         did = dataset.datasetID
         DIDs.append(did) ##append each dataset's id to the list
-
 
     theMatrix = []
 
@@ -138,8 +138,21 @@ def getSpeciesDataToCSV(tName, fName):
 
     output = []
 
-    downloadsCollection = API.getDatasetDownload(DIDs)
-    for item in downloadsCollection.items:
+
+    downloadsCollection = []
+    ##do one by one because batch takes too long to wait for response
+    for download in DIDs:
+        d = API.getDatasetDownload(download)
+        print d
+        for item in d.items:
+            downloadsCollection.append(item)
+
+
+
+    e = 0
+    for item in downloadsCollection:
+        e +=1
+        print e
         try:
             subDate = item.neotomaLastSub
             dType = item.datasetType
@@ -156,6 +169,7 @@ def getSpeciesDataToCSV(tName, fName):
             siteAlt = site.alitutde
             for sample in item.samples:
                 depth = sample.unitDepth
+                print depth
                 sampleAge = sample.sampleAges[0]
                 ageType = sampleAge.ageType
                 age = sampleAge.age
@@ -201,13 +215,13 @@ def getSpeciesDataToCSV(tName, fName):
                             itemRow['pollenSum'] = pollenSum
                             itemRow['pollenPct'] = (sampleData.Value / pollenSum) * 100
                         output.append(itemRow)
+                        print itemRow
         except:
-            pass
-
-
+            print "Passing."
 
 
         with open(fName, 'w') as outfile:
+            print "File is open."
             header = ['siteID', 'siteName', 'lat', 'lng', 'latN', 'latS', 'lngE', 'lngW', 'taxaGroup', 'taxonName', 'value', 'variableUnits', 'element','context', 'Age', 'minAge', 'maxAge', 'ageType', 'unitDepth', 'altitude', 'datasetType', 'submittedToDB', "pollenSum", "pollenPct"]
             writer = csv.DictWriter(outfile, header)
             writer.writeheader()
@@ -217,6 +231,8 @@ def getSpeciesDataToCSV(tName, fName):
                 writer.writerow(row)
                 i +=1
             outfile.close()
+            print "File is closed."
+    print "Function has terminated."
 
 
 # allTaxa = getAllTaxa()
