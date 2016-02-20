@@ -12,6 +12,7 @@ This package provides programmatic access to the neotoma paleoecological databas
 
 ```python
 import neotoma
+from neotoma import API
 # List all site names in the database between 1000 and 2000m altitude
 sites = API.getSite(altmin=1000, altmax=2000) ##siteCollection
 for site in sites.items: ##iterate over the siteCollection's items
@@ -19,7 +20,7 @@ for site in sites.items: ##iterate over the siteCollection's items
 
 # List all mammal taxa in the database
 mammals = API.getTaxa(taxagroup="MAM")
-for t in taxa.items:
+for t in mammals.items:
   print t.taxonName
 ```
 
